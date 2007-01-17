@@ -21,7 +21,7 @@ W_TBPAD = W_TPAD + W_BPAD
 
 timelimit = 30 #sec (USER SHOULD SET THIS)
 unit_timeout = 1 #sec
-DEV = '/dev/ttyS0' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
+DEV = 'stdin' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
 
 #this is the table that is hardcoded into the scintillator under: F8-COMPUTER OUTPUT
 #DO NOT EDIT (unless your scintillator has something different shown here)

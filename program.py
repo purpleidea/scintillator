@@ -176,6 +176,7 @@ def capture():
 		if i < len(cells) - 2:
 			top = top + ','
 	ix = 0 #iterations per serial opening... (how many protocols in this capture sequence, even duplicates)
+	zix = 0 #how many loops... (debug)
 
 	#ser = open('/dev/ttyS0', 'rb') #read, binary
 	try:
@@ -189,7 +190,7 @@ def capture():
 
 
 	except: #too bad this is broken and doesn't seem to actually catch the error!! grrr why!? or maybe it does?
-		message('problem opening serial device...')
+		message('problem opening file/device...')
 		stopped = True
 		#stop = True
 		return
@@ -197,7 +198,7 @@ def capture():
 
 	message('data capture started...')
 	while 1:
-
+		zix = zix + 1
 		if stop:
 			if not(f == None):
 				msg = ' INTERRUPT'
@@ -205,6 +206,7 @@ def capture():
 				f.close()
 			f = None
 			ser.close()
+			ser = None
 			stopped = True
 			message('data capture stopped.')
 			break
@@ -290,17 +292,27 @@ def capture():
 						ix = ix + 1
 						f = open('/tmp/lscdata-p%s-%s-%s.csv' % (p, td, ix), 'w')
 						f.write(top + '\n')
-					else:
-						f.write(','.join(split))
 
-
+					f.write(','.join(split))
 					data.append(split)
 					datawindow()
+
+				elif line == chr(10): # '\n'
+					if justended: #there seems to be a newline all by itself after an *,EOP (is it me or the lsc?)
+						pass
+					else: message('random newline found and ignored...')
+
 
 				else:
 					#if this keeps coming up, likely select cells does not between this program and scintillator
 					#if you're sure it matches, or occasionally this pops up, let me know! we have a new type of row :(
 					message('unrecognized row of data!', 7)
+					f_err = open('/tmp/f_err-%s.csv' % (td), 'a')
+					f_err.write('start@%s>\n' % zix)
+					for Z in range(len(line)):
+						f_err.write(str(ord(line[Z])) + '\n')
+					f_err.write('<end@%s\n\n' % zix)
+					f_err.close()
 
 
 
@@ -308,6 +320,8 @@ def capture():
 			if timeouts > ((timelimit/unit_timeout)+1):
 				#prompt...
 				waittime = 0
+
+				lock.acquire()
 				winprompt = curses.newwin(W_HEIGHT-W_TBBOR-W_TBPAD-2, W_WIDTH-W_LRBOR-W_LRPAD, 4, 2)
 				winprompt.border(0,0,0,0,0,0,0,0)
 				winprompt.addstr(0, 2, 'PROMPT', curses.A_REVERSE)
@@ -319,31 +333,34 @@ def capture():
 					winprompt.addstr(3, 2, 'do you want to keep waiting? y/n ?', curses.A_NORMAL)
 
 				winprompt.refresh()
+				lock.release()
 				signal = 0
 				while signal == 0:
 
 					time.sleep(1) #wait 3 sec
 					waittime = waittime + 1
-					if waittime > 60: signal = chr('y') #so that things can run o/n
+					if waittime > 60: signal = ord('y') #so that things can run o/n
 
 					if signal in [ord('y'), ord('Y')]:
 						if justended: message('awaiting new protocol...')
-						else:
-							message('extending timeout...')
+						else: message('extending timeout...')
+
 						timeouts = 0
 						break
 
 					elif signal in [ord('n'), ord('N')]:
 						if justended: message('timing out capture...')
-						else:
-							message('timeing out...')
+						else: message('timeing out...')
+
 						stop = True #if reaches timelimit, kill it?
 						break
 
-					winprompt.addstr(4, 2, 'please enter y/n', curses.A_NORMAL)
+					lock.acquire()
+					if waittime == 15: winprompt.addstr(4, 2, 'please enter y/n', curses.A_NORMAL)
 					if waittime % 15 == 0: curses.beep()
 					if waittime % 5 == 0: curses.flash()
 					winprompt.refresh()
+					lock.release()
 
 				winprompt.clear()
 				winprompt.refresh()
