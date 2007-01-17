@@ -166,6 +166,7 @@ def capture():
 	header = []
 	data = []
 	again = True #for spectrum messages
+	justended = False
 	f = None #file object to be...
 	p = -1 #protocol #
 	td = time.strftime('%d%m%Y_%H%M%S') #start time
@@ -178,8 +179,14 @@ def capture():
 
 	#ser = open('/dev/ttyS0', 'rb') #read, binary
 	try:
-		import serial
-		ser = serial.Serial('/dev/ttyS0', baudrate=9600, timeout=unit_timeout, parity=serial.PARITY_EVEN, bytesize=serial.SEVENBITS) # (baudrate 9600 is the max for lsc)
+		global DEV
+		if DEV == 'stdin':
+			ser = open('H.txt', 'r')
+
+		else:
+			import serial
+			ser = serial.Serial(DEV, baudrate=9600, timeout=unit_timeout, parity=serial.PARITY_EVEN, bytesize=serial.SEVENBITS) # (baudrate 9600 is the max for lsc)
+
 
 	except: #too bad this is broken and doesn't seem to actually catch the error!! grrr why!? or maybe it does?
 		message('problem opening serial device...')
@@ -202,7 +209,9 @@ def capture():
 			message('data capture stopped.')
 			break
 
-		line = ser.readline() #read a '\n' terminated line (times out in 5 sec?)
+
+		line = ser.readline() #read a '\n' terminated line (times out in x sec)
+
 
 		if line != '':
 			timeouts = 0 #reset counter
@@ -217,7 +226,11 @@ def capture():
 			- last cell is CRLF (element 0) carriage return / line break
 			"""
 
-			if line[-4:] == ',EOP': #last 4 characters
+
+			where = line.find(',EOP')
+			if where > 0:
+#			if line[1:7] == ',EOP' + chr(13) + chr(10): #lsc prints this at the end of a protocol?
+
 				#do any end of protocol processing... maybe export to usb?
 				header = [] #get it ready to receive a new header...
 				data = []
@@ -225,9 +238,11 @@ def capture():
 					msg = ' ENDOFFILE'
 					f.write(('#' + msg + '#'*(len(top)-len(msg)-1)) + '\n')
 					f.close()
+					justended = True #tell timeout thing that a protocol just ended...
+					timeouts = ((timelimit/unit_timeout)+1) + 1 #let's not wait anymore for prompt...
 				f = None
 				p = -1
-				message('protocol #: %s ended.' % int(line[0:-4]))
+				message('protocol #: %s ended.' % int(line[0:where]))
 				again = True #reset spectrum message
 
 			elif line[0:2] == 'S,':
@@ -246,27 +261,27 @@ def capture():
 				# we need to identify if we have a header, and where it is.
 				# current logic is to look where the QIP value is supposed to be...
  				# this can be changed if we see any anomalies.
-				if split[3] in ['SIS', 'tSIE', 'tSIE\AEC']:
+				if (len(split) >= 4) and (split[3] in ['SIS', 'tSIE', 'tSIE\AEC']):
 					if len(header) > 0:
-						message('second header found!', 7, 1.5) #MAKE THIS ONE CRITICAL! or something...
+						message('second header found!', 7) #MAKE THIS ONE CRITICAL! or something...
+						#f_err = open('/tmp/f_err-%s.csv' % (td), 'a')
+						#f_err.write(line + '\n')
+						#f_err.close()
 
 					#process this header variable into an array of text for each line to be printed... (example below)
 					header = ['header: ', split[3], 'header obtained at: %s' % time.strftime('%d/%m/%Y %H:%M:%S')]
 					datawindow()
 
-	
+
 				elif len(split) == len(cells)-1: # -1 b/c no CRLF in split data
 					#regular data... do something with it...
 					if f == None:
 
-						#there has GOT to be a nicer way to do this...
-						try: p = ctitle.index('P#') #protocol #
-						except ValueError:
-							p = -1
+						try: p = ctitle.index('P#')
+						except ValueError: p = -1
 
 						try: p = cells.index(p) #which cell?
-						except ValueError:
-							p = -1
+						except ValueError: p = -1
 
 						if p >= 0: p = split[p]
 						else:
@@ -285,36 +300,49 @@ def capture():
 				else:
 					#if this keeps coming up, likely select cells does not between this program and scintillator
 					#if you're sure it matches, or occasionally this pops up, let me know! we have a new type of row :(
-					message('unrecognized row of data!', 7, 1.5)
+					message('unrecognized row of data!', 7)
 
 
 
 		else:
 			if timeouts > ((timelimit/unit_timeout)+1):
 				#prompt...
+				waittime = 0
 				winprompt = curses.newwin(W_HEIGHT-W_TBBOR-W_TBPAD-2, W_WIDTH-W_LRBOR-W_LRPAD, 4, 2)
 				winprompt.border(0,0,0,0,0,0,0,0)
 				winprompt.addstr(0, 2, 'PROMPT', curses.A_REVERSE)
-				winprompt.addstr(2, 2, 'do you want to keep waiting? yes/no ?', curses.A_NORMAL)
+				if justended:
+					winprompt.addstr(2, 2, 'a protocol just finished.', curses.A_NORMAL)
+					winprompt.addstr(3, 2, 'do you want to wait for another? y/n ?', curses.A_NORMAL)
+				else:
+					winprompt.addstr(2, 2, 'your capture has timed out.', curses.A_NORMAL)
+					winprompt.addstr(3, 2, 'do you want to keep waiting? y/n ?', curses.A_NORMAL)
+
 				winprompt.refresh()
 				signal = 0
 				while signal == 0:
 
-					time.sleep(3) #wait 3 sec
+					time.sleep(1) #wait 3 sec
+					waittime = waittime + 1
+					if waittime > 60: signal = chr('y') #so that things can run o/n
 
 					if signal in [ord('y'), ord('Y')]:
-						message('extending timeout...')
+						if justended: message('awaiting new protocol...')
+						else:
+							message('extending timeout...')
 						timeouts = 0
 						break
 
 					elif signal in [ord('n'), ord('N')]:
-						message('timing out...')
+						if justended: message('timing out capture...')
+						else:
+							message('timeing out...')
 						stop = True #if reaches timelimit, kill it?
 						break
 
 					winprompt.addstr(4, 2, 'please enter y/n', curses.A_NORMAL)
-					curses.beep()
-					curses.flash()
+					if waittime % 15 == 0: curses.beep()
+					if waittime % 5 == 0: curses.flash()
 					winprompt.refresh()
 
 				winprompt.clear()
