@@ -39,9 +39,11 @@ for line in data:
 
 	if line != '':
 
-		#i don't think this line actually is working... it doesn't added the msg...
-		if line[-4:] == ',EOP': #last 4 characters
-			saved = saved + '---protocol #: %s ended.---\n' % int(line[0:-4])
+
+		where = line.find(',EOP')
+		if where > 0:
+		#if line[-4:] == ',EOP': #last 4 characters
+			saved = saved + '---protocol #: %s ended.---\n' % int(line[0:where])
 
 
 		elif line[0:2] == 'S,':
