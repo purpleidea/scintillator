@@ -312,7 +312,7 @@ def capture():
 					#if this keeps coming up, likely select CELLS does not correspond between this program and scintillator
 					#if you're sure it matches, or occasionally this pops up, let me know! we have a new type of row :(
 					message(STR_UNKNOWN_DATA, 7)
-					f_err = open('/tmp/f_err-%s.csv' % (td), 'a')
+					f_err = open('error/f_err-%s.csv' % (td), 'a')
 					f_err.write('start@%s>\n' % zix)
 					for Z in range(len(line)):
 						f_err.write(str(ord(line[Z])) + '\n')
@@ -355,7 +355,7 @@ def capture():
 
 					elif signal in [ord('n'), ord('N')]:
 						if justended: message(STR_DO_TIMEOUT)
-						else: message(STR_TIMEOUT)
+						else: message(STR_GO_TIMEOUT)
 
 						thread.start_new(finish, ()) #try to finish...
 						time.sleep(1) #give it a bit of time to finish before we go back in the big while loop...
