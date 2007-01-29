@@ -22,7 +22,7 @@ W_TBPAD = W_TPAD + W_BPAD
 
 
 
-DEV = '/dev/ttyS0' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
+DEV = 'stdin' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
 BAUDRATE = 9600
 TIMELIMIT = 30 #sec (USER SHOULD SET THIS)
 default_timelimit = TIMELIMIT #save value

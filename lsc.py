@@ -54,6 +54,7 @@ queue = []
 winone = None
 wintwo = None
 winthree = None
+winprompt = None
 
 #data
 header = []
@@ -179,7 +180,7 @@ def capture():
 	try:
 		global DEV
 		if DEV == 'stdin':
-			ser = open(sys.stdin, 'r')
+			ser = open('H.txt', 'r')
 
 		else:
 			global BAUDRATE
@@ -237,7 +238,7 @@ def capture():
 					timeouts = ((TIMELIMIT/unit_timeout)+1) + 1 #let's not wait anymore for prompt...
 				f = None
 				p = -1
-				message(STR_PROTOCOL_END % int(line[0:where]))
+				message(STR_PROTOCOL_STOP % int(line[0:where]))
 				again = True #reset spectrum message
 
 			elif line[0:2] == 'S,':
@@ -284,7 +285,7 @@ def capture():
 						f.write(top + '\n')
 
 
-					#optimize the timeout
+					#optimize the timeout (potentially we could reset this every new protocol... or every mod 12 but who knows if there are 12 vials/rack always.)
 					try: k = ctitle.index('TIME')
 					except ValueError: k = -1
 
@@ -293,7 +294,7 @@ def capture():
 
 					if k >= 0: # and not(DEV == 'stdin')
 						k = float(split[k])
-						TIMELIMIT = k+2 #2 is guess of some slowness between vials time
+						TIMELIMIT = k+2 #2 is guess of some slowness between vials time (note: this can be b/w 2 vials on the same rack or between 2 vials on different racks)
 					else:
 						TIMELIMIT = default_timelimit
 
@@ -327,6 +328,7 @@ def capture():
 				waittime = 0
 
 				lock.acquire()
+				global winprompt
 				winprompt = curses.newwin(W_HEIGHT-W_TBBOR-W_TBPAD-2, W_WIDTH-W_LRBOR-W_LRPAD, 4, 2)
 				winprompt.border(0,0,0,0,0,0,0,0)
 				winprompt.addstr(0, 2, 'PROMPT', curses.A_REVERSE)
@@ -401,6 +403,12 @@ def helpwindow():
 	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	global winone
+
+	global winprompt
+	if winprompt:
+		message('choose y/n from prompt window first before viewing settings.')
+		return
+
 	#either create or destroy (toggle)
 	if not(winone):
 		winone = curses.newwin(W_HEIGHT-W_TBBOR-W_TBPAD-2, W_WIDTH-W_LRBOR-W_LRPAD, 4, 2)
@@ -416,8 +424,9 @@ def helpwindow():
 		if len(files) > (W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1):
 			delta = len(files) - (W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1)
 
+
 		for i in range(min(len(files), W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1)):
-			winone.addstr(1+header_height+1+i, 2, '%s)	%s' % ((len(files)-(i+delta))+1, files[len(files)-(i+delta)]), curses.A_NORMAL)
+			winone.addstr(1+header_height+1+i, 2, '%s)	%s' % ((len(files)-(i+delta+1))+1, files[(len(files)-(i+delta+1))]), curses.A_NORMAL)
 
 		winone.refresh()
 	else:
@@ -504,6 +513,12 @@ def setupwindow():
 	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	global winthree
+
+	global winprompt
+	if winprompt:
+		message('choose y/n from prompt window first before viewing settings.')
+		return
+
 	#either create or destroy (toggle)
 	if not(winthree):
 		winthree = curses.newwin(W_HEIGHT-W_TBBOR-W_TBPAD-2, W_WIDTH-W_LRBOR-W_LRPAD, 4, 2)
