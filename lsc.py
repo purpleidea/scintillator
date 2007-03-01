@@ -18,6 +18,12 @@
 #add modification of user settings while in the program (maybe it could save them to a file too?)
 #get adam to check to see if my code is nice
 
+
+#NEW bugs:?
+#1: start and stops right away if we had an earlier> timeout: y encountered when not ever passing data. not sure if it happens if data has gone through.
+#2: times out again and again, isn't looking at data maybe? it seems to keep changing the timeout to 2.1 sec ???
+#3: pwd ... is giving an error making the error file, b/c isn't running in correct dir relative to error folder.
+
 from settings import *
 import thread, time, os, curses, sys
 lock = thread.allocate_lock()
@@ -63,7 +69,7 @@ files = []
 
 #because i'm cool
 def clock():
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	lock.acquire()
 	alive = alive + 1
@@ -84,7 +90,7 @@ def clock():
 
 
 def messenger():
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	lock.acquire()
 	alive = alive + 1
@@ -147,7 +153,7 @@ def message(text, level=0, count=1):
 	# 4: critical
 
 	#therefore flash+beep --> 1+2 = 3
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	dict = {'text':text, 'level':level, 'count':count}
 	lock.acquire()
@@ -156,7 +162,7 @@ def message(text, level=0, count=1):
 
 #check for spaces in racks... alert the user...
 def capture():
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 
 	stopped = False
@@ -180,7 +186,10 @@ def capture():
 	try:
 		global DEV
 		if DEV == 'stdin':
-			ser = open('H.txt', 'r')
+			#BUG?: um, i think when i try to pipe inputs in, eg: cat start.txt input.txt stop.txt | ./lsc.py
+			# in the attempts to press start, give it the data and then quit, the data goes through to the keypress loop and never to this sys.stdin :( how do i fix this?
+			# in any case the manual data through stdin isn't as important and is a bonus in progress feature at the moment.
+			ser = open(sys.stdin, 'r')
 
 		else:
 			global BAUDRATE
@@ -250,7 +259,7 @@ def capture():
 			else:
 				split = line.split(',')
 
-				#TODO: modify split... ie: add the 0 onto the beginning of .543
+				#TODO: modify split... ie: add the 0 onto the beginning of .543 or is it add zeros to the end of the 2.
 
 
 				# we need to identify if we have a header, and where it is.
@@ -280,8 +289,8 @@ def capture():
 							p = '~1'
 
 						ix = ix + 1
-						files.append('data/lscdata-p%s-%s-%s.csv' % (p, td, ix))
-						f = open('data/lscdata-p%s-%s-%s.csv' % (p, td, ix), 'w')
+						files.append(WD + 'data/lscdata-p%s-%s-%s.csv' % (p, td, ix))
+						f = open(WD + 'data/lscdata-p%s-%s-%s.csv' % (p, td, ix), 'w')
 						f.write(top + '\n')
 
 
@@ -293,8 +302,13 @@ def capture():
 					except ValueError: k = -1
 
 					if k >= 0: # and not(DEV == 'stdin')
-						k = float(split[k])
-						TIMELIMIT = k+2 #2 is guess of some slowness between vials time (note: this can be b/w 2 vials on the same rack or between 2 vials on different racks)
+						k = float(split[k])*60 #b/c time is in minutes, so *60 to get to seconds.
+						if (TIMELIMIT != (k+SLOWNESS)):
+							message(STR_CHANGED_TIMELIMIT % (k+SLOWNESS))
+							TIMELIMIT = k+SLOWNESS
+
+
+
 					else:
 						TIMELIMIT = default_timelimit
 
@@ -313,7 +327,7 @@ def capture():
 					#if this keeps coming up, likely select CELLS does not correspond between this program and scintillator
 					#if you're sure it matches, or occasionally this pops up, let me know! we have a new type of row :(
 					message(STR_UNKNOWN_DATA, 7)
-					f_err = open('error/f_err-%s.csv' % (td), 'a')
+					f_err = open(WD + 'error/f_err-%s.csv' % (td), 'a')
 					f_err.write('start@%s>\n' % zix)
 					for Z in range(len(line)):
 						f_err.write(str(ord(line[Z])) + '\n')
@@ -381,7 +395,7 @@ def capture():
 
 #try and get the capture thread to shutdown...
 def finish():
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 
 	if not(stopped):
@@ -396,17 +410,18 @@ def finish():
 			timer = timer + 1
 			time.sleep(1)
 
+		if (stopped): stop = False #reset stop signal. so that we can start it again. (if not stopped, don't fix signal, therefore program will have to quit and restart... not sure how the above code forces a timeout... hmmm
 
 
 def helpwindow():
 
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	global winone
 
 	global winprompt
 	if winprompt:
-		message('choose y/n from prompt window first before viewing settings.')
+		message('choose y/n from prompt window first before viewing help/info window.')
 		return
 
 	#either create or destroy (toggle)
@@ -436,7 +451,7 @@ def helpwindow():
 
 
 def datawindow():
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 
 
@@ -510,13 +525,13 @@ def datawindow():
 
 def setupwindow():
 
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 	global winthree
 
 	global winprompt
 	if winprompt:
-		message('choose y/n from prompt window first before viewing settings.')
+		message('choose y/n from prompt window first before viewing setup window.')
 		return
 
 	#either create or destroy (toggle)
@@ -527,11 +542,13 @@ def setupwindow():
 		winthree.addstr(2, 2, 'these are the current settings:', curses.A_NORMAL)
 
 
-		winthree.addstr(4, 2, 'a) device:	%s' % DEV, curses.A_NORMAL)
-		winthree.addstr(5, 2, 'b) baudrate:	%s' % BAUDRATE, curses.A_NORMAL)
-		winthree.addstr(6, 2, 'c) timeout:	%s sec' % TIMELIMIT, curses.A_NORMAL)
-		winthree.addstr(7, 2, 'd) display:	%s' % str(DISPLAY).replace(' ', ''), curses.A_NORMAL)
-		winthree.addstr(8, 2, 'e) cells:	%s' % str(CELLS).replace(' ', '') , curses.A_NORMAL)
+		winthree.addstr(4, 2, 'a) wd:\t%s' % WD, curses.A_NORMAL)
+		winthree.addstr(5, 2, 'b) device:\t%s' % DEV, curses.A_NORMAL)
+		winthree.addstr(6, 2, 'c) baudrate:\t%s' % BAUDRATE, curses.A_NORMAL)
+		winthree.addstr(7, 2, 'd) timeout:\t%s sec' % TIMELIMIT, curses.A_NORMAL)
+		winthree.addstr(8, 2, 'e) slowness:\t%s sec' % SLOWNESS, curses.A_NORMAL)
+		winthree.addstr(9, 2, 'f) display:\t%s' % str(DISPLAY).replace(' ', ''), curses.A_NORMAL)
+		winthree.addstr(10, 2, 'g) cells:\t%s' % str(CELLS).replace(' ', '') , curses.A_NORMAL)
 		winthree.refresh()
 
 	else:
@@ -544,7 +561,7 @@ def setupwindow():
 
 def main():
 
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
 
 	#start the ncursing
@@ -561,7 +578,7 @@ def main():
 
 
 	x = 2
-	for str in ['F1-HELP/INFO', 'F2-START/STOP', 'F3-SETUP', 'F4-QUIT']:
+	for str in ['#1-HELP/INFO', '#2-START/STOP', '#3-SETUP', '#4-QUIT']:
 		winx.addstr(23, x, str, curses.A_REVERSE)
 		x = x + 2 + len(str)
 
@@ -602,7 +619,7 @@ def main():
 	while 1:
 		c = winx.getch() #stdscr.getch() doesn't work properly! why?
 
-		if c == curses.KEY_F1 or c == ord('1'): #help (toggle)
+		if c in [curses.KEY_F1, ord('1')]: #help (toggle)
 			helpwindow()
 
 		elif c in [curses.KEY_F2, ord('2')]: #start/stop toggle
@@ -631,7 +648,8 @@ def main():
 
 			break
 
-		elif chr(c) in ['n', 'N', 'y', 'Y']: #send value to window prompt
+		#can't do: elif chr(c) in ['n', 'Y', ...] b/c some values of c are bigger than 255 and break chr function.
+		elif c in [ord('n'), ord('N'), ord('y'), ord('Y')]: #send value to window prompt
 			signal = c
 
 		elif c == ord('g'): #start (go)
@@ -659,11 +677,12 @@ def main():
 
 
 def restore():
-	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
-	stdscr.keypad(0);
+	stdscr.keypad(0)
 	curses.echo()
-	curses.nocbreak();
+	curses.nocbreak()
+	#curses.curs_set(1) #?
 	curses.endwin()
 
 

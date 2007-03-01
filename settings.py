@@ -1,5 +1,42 @@
+WD = '/home/james/scintillator/' #working dir, so we can run it and use absolute path's
+DEV = '/dev/ttyS0' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
+BAUDRATE = 9600
+TIMELIMIT = 30 #sec (USER SHOULD SET THIS)
+SLOWNESS = 10 #sec (is guess of some slowness between vials time (note: this can be b/w 2 vials on the same rack or between 2 vials on different racks, or b/w vials separated by spaces... etc)
+default_timelimit = TIMELIMIT #save value
+unit_timeout = 1 #sec
+prompt_wait = 30 #sec
 
 MSG_TIME = 3
+
+
+
+
+STR_WELCOME = 'welcome to the lsc data collection program.'
+STR_IS_STOP = 'data capture stopped.'
+STR_TRY_STOP = 'trying to stop data capture...'
+STR_IS_START = 'data capture started...'
+STR_ALREADY_START = 'already in capture mode!'
+STR_ALREADY_TRY_STOP = 'already trying to stop data capture!'
+STR_PROBLEM_START = 'problem opening file/device!'
+STR_FOUND_SPECTRUM = 'spectrum data found!'
+STR_BAD_KEY = 'uncaught key: %s pressed!' #make = '' for no message
+STR_PROTOCOL_STOP = 'protocol #: %s ended.'
+STR_ANOTHER_HEADER = 'another header found!'
+STR_NEWLINE = 'random newline found and ignored!'
+STR_UNKNOWN_DATA = 'unrecognized row of data!'
+STR_EXTENDED_TIMEOUT = 'extending timeout...'
+STR_GO_TIMEOUT = 'timing out...'
+STR_DO_TIMEOUT = 'waiting for capture to close...'
+STR_WAITING_PROTOCOL = 'awaiting new protocol...'
+STR_KILL = 'data capture killed forcefully.'
+STR_MISSING_CRLF = 'you have not defined a CRLF element in your ctitle array!'
+STR_MANY_CRLF = 'there must be only one occurrence of: CRLF in your CELLS array, and it must be the last element.'
+STR_CHANGED_TIMELIMIT = 'the timelimit has been changed to %s seconds to reflect your current count time.'
+
+
+
+
 W_HEIGHT = 24
 W_WIDTH = 80
 #BORDERS
@@ -20,14 +57,6 @@ W_TBPAD = W_TPAD + W_BPAD
 
 
 
-
-
-DEV = 'stdin' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
-BAUDRATE = 9600
-TIMELIMIT = 30 #sec (USER SHOULD SET THIS)
-default_timelimit = TIMELIMIT #save value
-unit_timeout = 1 #sec
-prompt_wait = 30 #sec
 
 #this is the table that is hardcoded into the scintillator under: F8-COMPUTER OUTPUT
 #DO NOT EDIT (unless your scintillator has something different shown here)
@@ -83,7 +112,6 @@ format[21] = 'BXXX.XX'
 format[22] = 'BXXX.XX'
 
 
-
 #this is the format seen under `Output Cells?' and can be changed based on your data collection preference.
 #WARNING: the last element in this array must be 0
 
@@ -95,28 +123,4 @@ DISPLAY = [3, 4, 5, 14, 18] #it should be validated to not be too long in calcul
 def int2bin(n, count=8):
     """returns the binary of integer n, using count number of digits"""
     return "".join([str((n >> y) & 1) for y in range(count-1, -1, -1)])
-
-
-
-STR_WELCOME = 'welcome to the lsc data collection program.'
-STR_IS_STOP = 'data capture stopped.'
-STR_TRY_STOP = 'trying to stop data capture...'
-STR_IS_START = 'data capture started...'
-STR_ALREADY_START = 'already in capture mode!'
-STR_ALREADY_TRY_STOP = 'already trying to stop data capture!'
-STR_PROBLEM_START = 'problem opening file/device!'
-STR_FOUND_SPECTRUM = 'spectrum data found!'
-STR_BAD_KEY = 'uncaught key: %s pressed!' #make = '' for no message
-STR_PROTOCOL_STOP = 'protocol #: %s ended.'
-STR_ANOTHER_HEADER = 'another header found!'
-STR_NEWLINE = 'random newline found and ignored!'
-STR_UNKNOWN_DATA = 'unrecognized row of data!'
-STR_EXTENDED_TIMEOUT = 'extending timeout...'
-STR_GO_TIMEOUT = 'timing out...'
-STR_DO_TIMEOUT = 'waiting for capture to close...'
-STR_WAITING_PROTOCOL = 'awaiting new protocol...'
-STR_KILL = 'data capture killed forcefully.'
-STR_MISSING_CRLF = 'you have not defined a CRLF element in your ctitle array!'
-STR_MANY_CRLF = 'there must be only one occurrence of: CRLF in your CELLS array, and it must be the last element.'
-
 
