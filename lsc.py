@@ -120,7 +120,10 @@ def messenger():
 
 			lock.acquire()
 			winx.addstr(2, W_LBOR, ' '*(W_WIDTH-W_LRBOR)) #clear
-			winx.addstr(2, W_WIDTH-W_LRBOR-len(queue[pos]['text'])-len(cnt), cnt + queue[pos]['text'], curses.A_REVERSE)
+                        safe_str = cnt + queue[pos]['text'] #store string
+                        if (len(safe_str)) > (W_WIDTH-W_LRBOR-W_LRPAD): safe_str = safe_str[0:(W_WIDTH-W_LRBOR-W_LRPAD-len('[...]'))] + '[...]'
+
+			winx.addstr(2, W_WIDTH-W_LRBOR-len(safe_str), safe_str, curses.A_REVERSE)
 			winx.refresh()
 			lock.release()
 			for x in range(queue[pos]['count']):
@@ -271,7 +274,7 @@ def capture():
 
 					#TODO: format header nicely, line by line...
 					header = ['header: ', split[3], 'header obtained at: %s' % time.strftime('%d/%m/%Y %H:%M:%S')]
-					datawindow()
+					dodatawindow()
 
 
 				elif len(split) == len(CELLS)-1: # -1 b/c no CRLF in split data
@@ -315,7 +318,7 @@ def capture():
 
 					f.write(','.join(split))
 					data.append(split)
-					datawindow()
+					dodatawindow()
 
 				elif line == chr(10): # '\n'
 					if justended: #there seems to be a newline all by itself after an *,EOP (is it me or the lsc?)
@@ -417,12 +420,24 @@ def helpwindow():
 
 	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
-	global winone
+	global winone, wintwo, winthree
 
 	global winprompt
 	if winprompt:
 		message('choose y/n from prompt window first before viewing help/info window.')
 		return
+
+	#kill other windows first
+	if wintwo:
+		wintwo.clear()
+		wintwo.refresh()
+		wintwo = None
+
+	if winthree:
+		winthree.clear()
+		winthree.refresh()
+		winthree = None
+
 
 	#either create or destroy (toggle)
 	if not(winone):
@@ -451,13 +466,69 @@ def helpwindow():
 
 
 def datawindow():
+
 	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
+	global winone, wintwo, winthree
+
+	global winprompt
+	if winprompt:
+		message('choose y/n from prompt window first before viewing data window.')
+		return
+
+	#kill other windows first
+	if winone:
+		winone.clear()
+		winone.refresh()
+		winone = None
+
+	if winthree:
+		winthree.clear()
+		winthree.refresh()
+		winthree = None
 
 
+	#either create or destroy (toggle)
+	if not(wintwo):
+		dodatawindow()
+
+	else:
+		wintwo.clear()
+		wintwo.refresh()
+		wintwo = None
+
+
+def dodatawindow():
+	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
+	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
+	global winone, wintwo, winthree
+
+	TOP_PADDING = W_TPAD #replace with 0?
+	SPACER = 0
+	"""used for testing:
+	header = ['Aaaaa.', 'BBbbb.', 'CCCccc...']
+	data = [
+	['a0','b0','c0','d0','e0','f0','g0','h0','i0','j0','k0','l0','m0','n0','o0','p0','q0','r0','s0','t0','u0','v0','w0','x0','y0','z0'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a2','b2','c2','d2','e2','f2','g2','h2','i2','j2','k2','l2','m2','n2','o2','p2','q2','r2','s2','t2','u2','v2','w2','x2','y2','z2'],
+	['a3','b3','c3','d3','e3','f3','g3','h3','i3','j3','k3','l3','m3','n3','o3','p3','q3','r3','s3','t3','u3','v3','w3','x3','y3','z3'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a1','b1','c1','d1','e1','f1','g1','h1','i1','j1','k1','l1','m1','n1','o1','p1','q1','r1','s1','t1','u1','v1','w1','x1','y1','z1'],
+	['a2','b2','c2','d2','e2','f2','g2','h2','i2','j2','k2','l2','m2','n2','o2','p2','q2','r2','s2','t2','u2','v2','w2','x2','y2','z2'],
+	['a3','b3','c3','d3','e3','f3','g3','h3','i3','j3','k3','l3','m3','n3','o3','p3','q3','r3','s3','t3','u3','v3','w3','x3','y3','z3'],
+	['aN','bN','cN','dN','eN','fN','gN','hN','iN','jN','kN','lN','mN','nN','oN','pN','qN','rN','sN','tN','uN','vN','wN','xN','yN','zN']
+	]
+	"""
 	header_height = 0
 	if len(header) > 0: #do we have a header?
 		header_height = len(header)
+		SPACER = 1
 
 	heading = ''
 	for i in range(len(DISPLAY)):
@@ -469,28 +540,37 @@ def datawindow():
 		if i < len(DISPLAY) - 1:
 			heading = heading + ' '
 
+	#kill other windows first
+	if winone:
+		winone.clear()
+		winone.refresh()
+		winone = None
 
-	global wintwo
+	if winthree:
+		winthree.clear()
+		winthree.refresh()
+		winthree = None
+
 	if not(wintwo):
 		wintwo = curses.newwin(W_HEIGHT-W_TBBOR-W_TBPAD-2, W_WIDTH-W_LRBOR-W_LRPAD, 4, 2)
 		wintwo.border(0,0,0,0,0,0,0,0)
 		wintwo.addstr(0, 2, 'DATA', curses.A_REVERSE)
 	else:
 		#put whitespace over old data to blank
-		for i in range(W_HEIGHT-W_TBBOR-W_TBPAD-2-W_TBBOR-header_height-1):
-			wintwo.addstr(1+i+header_height+1, 1, ' '*(W_WIDTH-W_LRBOR-W_LRPAD-W_LRBOR), curses.A_NORMAL)
+		for i in range(W_HEIGHT-W_TBBOR-W_TBPAD-2-W_TBBOR-header_height-1-TOP_PADDING-SPACER):
+			wintwo.addstr(W_TBOR+i+header_height+1+TOP_PADDING+SPACER, 1, ' '*(W_WIDTH-W_LRBOR-W_LRPAD-W_LRBOR), curses.A_NORMAL)
 
 	#print new data
 	for i in range(header_height):
-		wintwo.addstr(1+i, 2, header[i], curses.A_NORMAL)
+		wintwo.addstr(W_TBOR+i+TOP_PADDING, 2, header[i], curses.A_NORMAL)
 
-	wintwo.addstr(1+header_height, 2, heading, curses.A_NORMAL)
+	wintwo.addstr(W_TBOR+header_height+TOP_PADDING+SPACER, 2, heading, curses.A_NORMAL)
 
 	delta = 0 #this ensures we only use the last (newest) values in the data array
-	if len(data) > (W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1):
-		delta = len(data) - (W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1)
+	if len(data) > (W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1-SPACER):
+		delta = len(data) - (W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1-SPACER)
 
-	for i in range(min(len(data), W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1)):
+	for i in range(min(len(data), W_HEIGHT-W_TBBOR-W_TBPAD-W_TBBOR-2-header_height-1-SPACER-TOP_PADDING)):
 
 		row = ''
 		for j in range(len(DISPLAY)):
@@ -518,7 +598,7 @@ def datawindow():
 				row = row + ' '
 
 
-		wintwo.addstr(1+header_height+1+i, 2, row, curses.A_NORMAL)
+		wintwo.addstr(W_TBOR+header_height+1+i+SPACER+TOP_PADDING, 2, row, curses.A_NORMAL)
 
 	wintwo.refresh()
 
@@ -527,12 +607,24 @@ def setupwindow():
 
 	global stdscr, winx, ctitle, format, CELLS, pid, die, alive, stop, stopped, pos, queue, header, data, files, signal, DISPLAY, TIMELIMIT, unit_timeout, prompt_wait, default_timelimit, WD, SLOWNESS
 	global MSG_TIME, W_HEIGHT, W_WIDTH, W_LBOR, W_RBOR, W_TBOR, W_BBOR, W_LRBOR, W_TBBOR, W_LPAD, W_RPAD, W_TPAD, W_BPAD, W_LRPAD, W_TBPAD
-	global winthree
+	global winone, wintwo, winthree
 
 	global winprompt
 	if winprompt:
 		message('choose y/n from prompt window first before viewing setup window.')
 		return
+
+	#kill other windows first
+	if winone:
+		winone.clear()
+		winone.refresh()
+		winone = None
+
+	if wintwo:
+		wintwo.clear()
+		wintwo.refresh()
+		wintwo = None
+
 
 	#either create or destroy (toggle)
 	if not(winthree):
@@ -578,7 +670,7 @@ def main():
 
 
 	x = 2
-	for str in ['#1-HELP/INFO', '#2-START/STOP', '#3-SETUP', '#4-QUIT']:
+	for str in ['#1-HELP/INFO', '#2-START/STOP', '#3-DATA', '#4-SETUP', '#5-QUIT']:
 		winx.addstr(23, x, str, curses.A_REVERSE)
 		x = x + 2 + len(str)
 
@@ -630,11 +722,13 @@ def main():
 				if stop: message(STR_ALREADY_TRY_STOP)
 				else: finish()
 
+		elif c in [curses.KEY_F3, ord('3')]: #data window
+			datawindow()
 
-		elif c in [curses.KEY_F3, ord('3')]: #setup
+		elif c in [curses.KEY_F4, ord('4')]: #setup
 			setupwindow()
 
-		elif c in [curses.KEY_F4, ord('4'), ord('q'), ord('Q')]: #quit
+		elif c in [curses.KEY_F5, ord('5'), ord('q'), ord('Q')]: #quit
 			finish()
 			die = True #kill the clock&messenger
 			limit = 0

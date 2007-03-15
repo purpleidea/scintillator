@@ -2,7 +2,7 @@ WD = '/home/james/scintillator/' #working dir, so we can run it and use absolute
 DEV = '/dev/ttyS0' # 'stdin', '/dev/ttyS0', '/dev/ttyS1', etc...
 BAUDRATE = 9600
 TIMELIMIT = 30 #sec (USER SHOULD SET THIS)
-SLOWNESS = 10 #sec (is guess of some slowness between vials time (note: this can be b/w 2 vials on the same rack or between 2 vials on different racks, or b/w vials separated by spaces... etc)
+SLOWNESS = 25#10 #sec (is guess of some slowness between vials time (note: this can be b/w 2 vials on the same rack or between 2 vials on different racks, or b/w vials separated by spaces... etc)
 default_timelimit = TIMELIMIT #save value
 unit_timeout = 1 #sec
 prompt_wait = 30 #sec
@@ -31,8 +31,8 @@ STR_DO_TIMEOUT = 'waiting for capture to close...'
 STR_WAITING_PROTOCOL = 'awaiting new protocol...'
 STR_KILL = 'data capture killed forcefully.'
 STR_MISSING_CRLF = 'you have not defined a CRLF element in your ctitle array!'
-STR_MANY_CRLF = 'there must be only one occurrence of: CRLF in your CELLS array, and it must be the last element.'
-STR_CHANGED_TIMELIMIT = 'the timelimit has been changed to %s seconds to reflect your current count time.'
+STR_MANY_CRLF = 'CRLF problem in CELLS array, see comments.' # there must be only one occurrence of: CRLF in your CELLS array, and it must be the last element.
+STR_CHANGED_TIMELIMIT = 'the timelimit has been changed to %s seconds to reflect your count time.'
 
 
 
