@@ -1,0 +1,27 @@
+This is some software that I wrote around 2007.
+This software is used to read from the serial port of a scintillation counter.
+See: https://en.wikipedia.org/wiki/Scintillation_counter for some information.
+This was developed for, and tested on, an old Packard TRI-CARB machine.
+I don't remember the specific model number, but you could adapt this as needed.
+Many older scintillation counters are still in use today and work great!
+They were quite expensive to purchase initially, as are newer models.
+One downside with the older versions is that data comes out by line printer.
+Researchers would then have to transcribe the data manually to a spreadsheet.
+The benefit of this software is that you get a digital copy without the work!
+The data also comes out at a higher precision. I'm not sure if this is needed.
+For this to work, some parameters must be set in a certain way on the machine.
+I never thought about releasing this code publicly until now.
+Since it was written a while back, please excuse any inexperience in the code.
+
+I am always interested in helping research and researchers for the greater good.
+Please feel free to track down university labs who struggle with their machine.
+If they need assistance in getting this going, please feel free to contact me.
+
+WARNING: this machine processes vials containing radioactive fluid!
+You must have proper supervision to be near, and work on one of these machines.
+
+For bugs, questions, patches, support, and thanks, email: scintillator@shubin.ca
+
+Cheers,
+James
+
