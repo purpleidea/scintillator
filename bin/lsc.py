@@ -1,28 +1,43 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+# Liquid Scintillation Counter (lsc)
+# Copyright (C) 2007-2013  James Shubin
+# Written by James Shubin <james@shubin.ca>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#TODO:
-#make work in any size terminal (or a terminal > some min size), and also a terminal that resizes...
-#mention empty spaces in racks
-#hack format of header and display nicely
-#format output number data properly
-#format prompt nicer
-#validate length of display list (so screen doesn't explode)
-#find out about why we have 2 kill messages (and how the kill works)
-#check that all the locking is done properly
-#see if it's okay to run main() within try/catch
-#make stdin work
-#make save/export button for getting data onto a usb or something...
-#put any other text strings into settings file (and implement multi-language)
-#fix restore() so that terminal still displays text when typing after a crash
-#fix case of all variables to match some sort of sensible pattern
-#add modification of user settings while in the program (maybe it could save them to a file too?)
-#get adam to check to see if my code is nice
+# TODO:
+# make work in any size terminal (or a terminal > some min size), and also a terminal that resizes...
+# mention empty spaces in racks
+# hack format of header and display nicely
+# format output number data properly
+# format prompt nicer
+# validate length of display list (so screen doesn't explode)
+# find out about why we have 2 kill messages (and how the kill works)
+# check that all the locking is done properly
+# see if it's okay to run main() within try/catch
+# make stdin work
+# make save/export button for getting data onto a usb or something...
+# put any other text strings into settings file (and implement multi-language)
+# fix restore() so that terminal still displays text when typing after a crash
+# fix case of all variables to match some sort of sensible pattern
+# add modification of user settings while in the program (maybe it could save them to a file too?)
 
-
-#NEW bugs:?
-#1: start and stops right away if we had an earlier> timeout: y encountered when not ever passing data. not sure if it happens if data has gone through.
-#2: times out again and again, isn't looking at data maybe? it seems to keep changing the timeout to 2.1 sec ???
-#3: pwd ... is giving an error making the error file, b/c isn't running in correct dir relative to error folder.
+# FIXME: NEW bugs ?
+# 1: start and stops right away if we had an earlier> timeout: y encountered when not ever passing data. not sure if it happens if data has gone through.
+# 2: times out again and again, isn't looking at data maybe? it seems to keep changing the timeout to 2.1 sec ???
+# 3: pwd ... is giving an error making the error file, b/c isn't running in correct dir relative to error folder.
 
 from settings import *
 import thread, time, os, curses, sys
